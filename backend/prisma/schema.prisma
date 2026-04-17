@@ -1,0 +1,239 @@
+// PeopleHub HRM System - Prisma Schema (Sprint 1)
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// ENUMS
+// ============================================================
+
+enum UserRole {
+  ADMIN
+  HR_MANAGER
+  MANAGER
+  EMPLOYEE
+  RECRUITER
+}
+
+enum EmployeeStatus {
+  PROBATION
+  ACTIVE
+  SUSPENDED
+  TERMINATED
+  RESIGNED
+  RETIRED
+  ON_LEAVE
+}
+
+enum ContractType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  INTERN
+  FREELANCE
+}
+
+// ============================================================
+// MULTI-TENANCY
+// ============================================================
+
+model Tenant {
+  id           String       @id @default(uuid())
+  name         String
+  slug         String       @unique
+  domain       String?      @unique
+  logo         String?
+  timezone     String       @default("UTC")
+  language     String       @default("en")
+  currency     String       @default("USD")
+  isActive     Boolean      @default(true)
+  plan         String       @default("FREE")
+  maxEmployees Int          @default(10)
+  settings     Json?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  users        User[]
+  departments  Department[]
+  positions    Position[]
+  employees    Employee[]
+}
+
+// ============================================================
+// USER & AUTH
+// ============================================================
+
+model User {
+  id             String     @id @default(uuid())
+  tenantId       String
+  tenant         Tenant     @relation(fields: [tenantId], references: [id])
+  email          String
+  emailVerified  Boolean    @default(false)
+  passwordHash   String?
+  mfaEnabled     Boolean    @default(false)
+  mfaSecret      String?
+  mfaBackupCodes String[]
+  role           UserRole   @default(EMPLOYEE)
+  isActive       Boolean    @default(true)
+  lastLoginAt    DateTime?
+  lastLoginIp    String?
+  failedAttempts Int        @default(0)
+  lockedUntil    DateTime?
+  settings       Json?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  employee       Employee?
+  sessions       Session[]
+  refreshTokens  RefreshToken[]
+  managedDepartments Department[] @relation("DepartmentManager")
+
+  @@unique([tenantId, email])
+  @@index([tenantId, role])
+  @@index([tenantId, isActive])
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  ipAddress String?
+  userAgent String?
+  deviceName String?
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([token])
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  revoked   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([token])
+}
+
+// ============================================================
+// ORGANIZATION
+// ============================================================
+
+model Department {
+  id          String       @id @default(uuid())
+  tenantId    String
+  tenant      Tenant       @relation(fields: [tenantId], references: [id])
+  name        String
+  code        String?
+  description String?
+  parentId    String?
+  parent      Department?  @relation("DepartmentHierarchy", fields: [parentId], references: [id])
+  children    Department[] @relation("DepartmentHierarchy")
+  managerId   String?
+  manager     User?        @relation("DepartmentManager", fields: [managerId], references: [id])
+  budget      Decimal?     @db.Decimal(15, 2)
+  costCenter  String?
+  isActive    Boolean      @default(true)
+  sortOrder   Int          @default(0)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  employees   Employee[]
+  positions   Position[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+  @@index([tenantId, isActive])
+}
+
+model Position {
+  id           String     @id @default(uuid())
+  tenantId     String
+  tenant       Tenant     @relation(fields: [tenantId], references: [id])
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id])
+  title        String
+  code         String?
+  description  String?
+  level        Int        @default(1)
+  minSalary    Decimal?   @db.Decimal(15, 2)
+  maxSalary    Decimal?   @db.Decimal(15, 2)
+  headcount    Int        @default(1)
+  isActive     Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  employees    Employee[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+}
+
+// ============================================================
+// EMPLOYEE
+// ============================================================
+
+model Employee {
+  id               String         @id @default(uuid())
+  tenantId         String
+  tenant           Tenant         @relation(fields: [tenantId], references: [id])
+  userId           String?        @unique
+  user             User?          @relation(fields: [userId], references: [id])
+  employeeCode     String         @unique
+  firstName        String
+  lastName         String
+  displayName      String?
+  email            String
+  phone            String?
+  dateOfBirth      DateTime?
+  gender           String?
+  maritalStatus    String?
+  nationality      String?
+  address          String?
+  city             String?
+  state            String?
+  country          String         @default("VN")
+  postalCode       String?
+  profilePhoto     String?
+  status           EmployeeStatus @default(PROBATION)
+  departmentId     String?
+  department       Department?    @relation(fields: [departmentId], references: [id])
+  positionId       String?
+  position         Position?      @relation(fields: [positionId], references: [id])
+  managerId        String?
+  manager          Employee?      @relation("EmployeeHierarchy", fields: [managerId], references: [id])
+  directReports    Employee[]     @relation("EmployeeHierarchy")
+  hireDate         DateTime?
+  probationEndDate DateTime?
+  terminationDate  DateTime?
+  terminationReason String?
+  bankName         String?
+  bankAccount      String?
+  taxCode          String?
+  contractType     ContractType?
+  salary           Decimal?       @db.Decimal(15, 2)
+  emergencyContactName String?
+  emergencyContactPhone String?
+  emergencyContactRelation String?
+  notes            String?
+  isDeleted        Boolean        @default(false)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, departmentId])
+  @@index([tenantId, isDeleted])
+  @@index([employeeCode])
+}

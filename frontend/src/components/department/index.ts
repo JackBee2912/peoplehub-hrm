@@ -1,0 +1,1 @@
+export { DepartmentModal } from './DepartmentModal';
