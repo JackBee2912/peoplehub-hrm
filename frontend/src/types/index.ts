@@ -281,3 +281,338 @@ export interface PaginationParams {
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
 }
+
+// ============================================================
+// Attendance Types
+// ============================================================
+
+export type AttendanceStatus =
+  | 'PRESENT'
+  | 'ABSENT'
+  | 'LATE'
+  | 'EARLY_LEAVE'
+  | 'HALF_DAY'
+  | 'ON_LEAVE'
+  | 'REMOTE';
+
+export type ShiftType = 'FIXED' | 'ROTATING' | 'FLEXIBLE' | 'CUSTOM';
+
+export interface Shift {
+  id: string;
+  name: string;
+  code: string;
+  startTime: string;
+  endTime: string;
+  breakStart?: string;
+  breakEnd?: string;
+  breakMinutes?: number;
+  type: ShiftType;
+  color?: string;
+  isActive: boolean;
+  tenantId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateShiftInput {
+  name: string;
+  code: string;
+  startTime: string;
+  endTime: string;
+  breakStart?: string;
+  breakEnd?: string;
+  breakMinutes?: number;
+  type?: ShiftType;
+  color?: string;
+}
+
+export interface UpdateShiftInput extends Partial<CreateShiftInput> {
+  id: string;
+}
+
+export interface ShiftAssignment {
+  id: string;
+  shiftId: string;
+  shift: Shift;
+  employeeId: string;
+  employee: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    employeeCode: string;
+  };
+  startDate: string;
+  endDate?: string;
+  createdAt: string;
+}
+
+export interface AttendanceLog {
+  id: string;
+  employeeId: string;
+  employee?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    employeeCode: string;
+    department?: { name: string };
+  };
+  date: string;
+  checkInTime?: string;
+  checkOutTime?: string;
+  status: AttendanceStatus;
+  workedHours?: number;
+  lateMinutes?: number;
+  earlyLeaveMinutes?: number;
+  location?: string;
+  ipAddress?: string;
+  notes?: string;
+  shift?: Shift;
+  createdAt: string;
+}
+
+export interface CheckInOutResponse {
+  type: 'check_in' | 'check_out';
+  timestamp: string;
+  status: AttendanceStatus;
+  message: string;
+}
+
+export interface AttendanceDayRecord {
+  date: string;
+  status: AttendanceStatus;
+  checkInTime?: string;
+  checkOutTime?: string;
+  workedHours?: number;
+  lateMinutes?: number;
+}
+
+export interface AttendanceFilters {
+  employeeId?: string;
+  departmentId?: string;
+  status?: AttendanceStatus;
+  dateFrom?: string;
+  dateTo?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface AttendanceReportData {
+  summary: {
+    totalDays: number;
+    presentDays: number;
+    absentDays: number;
+    lateDays: number;
+    onLeaveDays: number;
+    remoteDays: number;
+    totalWorkedHours: number;
+    avgWorkedHours: number;
+  };
+  dailyData: {
+    date: string;
+    present: number;
+    absent: number;
+    late: number;
+    onLeave: number;
+  }[];
+}
+
+// ============================================================
+// Leave Types
+// ============================================================
+
+export type LeaveStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
+
+export type LeaveTypeCategory =
+  | 'ANNUAL'
+  | 'SICK'
+  | 'MATERNITY'
+  | 'PATERNITY'
+  | 'UNPAID'
+  | 'COMPENSATORY'
+  | 'BEREAVEMENT'
+  | 'MARRIAGE'
+  | 'CUSTOM';
+
+export interface LeaveType {
+  id: string;
+  name: string;
+  category: LeaveTypeCategory;
+  description?: string;
+  daysPerYear: number;
+  accrualRate?: number;
+  carryOverLimit?: number;
+  requiresAttachment?: boolean;
+  requiresApproval?: boolean;
+  maxConsecutiveDays?: number;
+  color?: string;
+  isActive: boolean;
+  tenantId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateLeaveTypeInput {
+  name: string;
+  category: LeaveTypeCategory;
+  description?: string;
+  daysPerYear: number;
+  accrualRate?: number;
+  carryOverLimit?: number;
+  requiresAttachment?: boolean;
+  requiresApproval?: boolean;
+  maxConsecutiveDays?: number;
+  color?: string;
+}
+
+export interface UpdateLeaveTypeInput extends Partial<CreateLeaveTypeInput> {
+  id: string;
+}
+
+export interface LeaveBalance {
+  id: string;
+  employeeId: string;
+  leaveTypeId: string;
+  leaveType: {
+    id: string;
+    name: string;
+    category: LeaveTypeCategory;
+    color?: string;
+    daysPerYear: number;
+  };
+  totalAllocated: number;
+  used: number;
+  remaining: number;
+  pending: number;
+  carryOver: number;
+  year: number;
+  lastAccruedAt?: string;
+}
+
+export interface LeaveRequest {
+  id: string;
+  employeeId: string;
+  employee: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    employeeCode: string;
+    department?: { name: string };
+  };
+  leaveTypeId: string;
+  leaveType: {
+    id: string;
+    name: string;
+    category: LeaveTypeCategory;
+    color?: string;
+  };
+  startDate: string;
+  endDate: string;
+  days: number;
+  isHalfDay?: boolean;
+  halfDayPeriod?: 'morning' | 'afternoon';
+  reason: string;
+  status: LeaveStatus;
+  attachmentUrl?: string;
+  approverId?: string;
+  approver?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  };
+  approvedAt?: string;
+  rejectionReason?: string;
+  cancelledAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateLeaveRequestInput {
+  leaveTypeId: string;
+  startDate: string;
+  endDate: string;
+  days: number;
+  isHalfDay?: boolean;
+  halfDayPeriod?: 'morning' | 'afternoon';
+  reason: string;
+  attachmentUrl?: string;
+}
+
+export interface LeaveApprovalAction {
+  requestId: string;
+  action: 'approve' | 'reject';
+  comment?: string;
+}
+
+export interface Holiday {
+  id: string;
+  name: string;
+  date: string;
+  type: 'PUBLIC' | 'COMPANY' | 'DEPARTMENT';
+  description?: string;
+  isRecurring: boolean;
+  departmentId?: string;
+  tenantId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateHolidayInput {
+  name: string;
+  date: string;
+  type?: 'PUBLIC' | 'COMPANY' | 'DEPARTMENT';
+  description?: string;
+  isRecurring?: boolean;
+  departmentId?: string;
+}
+
+export interface UpdateHolidayInput extends Partial<CreateHolidayInput> {
+  id: string;
+}
+
+export interface LeaveFilters {
+  employeeId?: string;
+  status?: LeaveStatus;
+  leaveTypeId?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+// ============================================================
+// Manager Dashboard Types
+// ============================================================
+
+export interface TeamAttendanceSummary {
+  totalTeamMembers: number;
+  presentToday: number;
+  absentToday: number;
+  onLeaveToday: number;
+  lateToday: number;
+  remoteToday: number;
+  teamMembers: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    employeeCode: string;
+    department?: { name: string };
+    status: AttendanceStatus;
+    checkInTime?: string;
+    shift?: { name: string };
+  }[];
+}
+
+export interface PendingApprovalSummary {
+  totalPending: number;
+  requests: {
+    id: string;
+    employeeName: string;
+    employeeCode: string;
+    leaveTypeName: string;
+    startDate: string;
+    endDate: string;
+    days: number;
+    reason: string;
+    createdAt: string;
+  }[];
+}

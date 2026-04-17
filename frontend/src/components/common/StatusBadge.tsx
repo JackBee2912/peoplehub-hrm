@@ -7,6 +7,7 @@ type StatusType =
   | 'pending'
   | 'approved'
   | 'rejected'
+  | 'cancelled'
   | 'probation'
   | 'suspended'
   | 'terminated'
@@ -15,7 +16,13 @@ type StatusType =
   | 'on_leave'
   | 'draft'
   | 'processing'
-  | 'completed';
+  | 'completed'
+  | 'present'
+  | 'absent'
+  | 'late'
+  | 'early_leave'
+  | 'half_day'
+  | 'remote';
 
 interface StatusBadgeProps {
   status: StatusType | string;
@@ -28,6 +35,7 @@ const statusConfig: Record<string, { color: string; label: string }> = {
   pending: { color: 'orange', label: 'Pending' },
   approved: { color: 'green', label: 'Approved' },
   rejected: { color: 'red', label: 'Rejected' },
+  cancelled: { color: 'default', label: 'Cancelled' },
   probation: { color: 'orange', label: 'Probation' },
   suspended: { color: 'volcano', label: 'Suspended' },
   terminated: { color: 'red', label: 'Terminated' },
@@ -37,6 +45,12 @@ const statusConfig: Record<string, { color: string; label: string }> = {
   draft: { color: 'default', label: 'Draft' },
   processing: { color: 'processing', label: 'Processing' },
   completed: { color: 'success', label: 'Completed' },
+  present: { color: 'green', label: 'Present' },
+  absent: { color: 'red', label: 'Absent' },
+  late: { color: 'orange', label: 'Late' },
+  early_leave: { color: 'volcano', label: 'Early Leave' },
+  half_day: { color: 'gold', label: 'Half Day' },
+  remote: { color: 'blue', label: 'Remote' },
 };
 
 export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, label }) => {

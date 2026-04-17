@@ -11,6 +11,14 @@ import {
   MenuUnfoldOutlined,
   SettingOutlined,
   BellOutlined,
+  ClockCircleOutlined,
+  CalendarOutlined,
+  BarChartOutlined,
+  FormOutlined,
+  UnorderedListOutlined,
+  WalletOutlined,
+  HomeOutlined,
+  CheckCircleOutlined,
 } from '@ant-design/icons';
 import { useAuthStore } from '@/stores/authStore';
 import type { MenuProps } from 'antd';
@@ -31,12 +39,66 @@ export const AdminLayout: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
 
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'HR_MANAGER';
+  const isManager = isAdmin || user?.role === 'MANAGER';
 
   const menuItems: MenuItem[] = [
     {
       key: '/admin',
       icon: <DashboardOutlined />,
       label: 'Dashboard',
+    },
+    ...(isManager
+      ? [
+          {
+            key: '/manager',
+            icon: <HomeOutlined />,
+            label: 'Manager Dashboard',
+          },
+        ]
+      : []),
+    {
+      key: '/my-attendance',
+      icon: <ClockCircleOutlined />,
+      label: 'My Attendance',
+      children: [
+        {
+          key: '/attendance/checkin',
+          icon: <ClockCircleOutlined />,
+          label: 'Check In/Out',
+        },
+        {
+          key: '/attendance/calendar',
+          icon: <CalendarOutlined />,
+          label: 'Calendar',
+        },
+        {
+          key: '/attendance/history',
+          icon: <UnorderedListOutlined />,
+          label: 'History',
+        },
+      ],
+    },
+    {
+      key: '/my-leave',
+      icon: <CalendarOutlined />,
+      label: 'My Leave',
+      children: [
+        {
+          key: '/leave/apply',
+          icon: <FormOutlined />,
+          label: 'Apply for Leave',
+        },
+        {
+          key: '/leave/my-requests',
+          icon: <UnorderedListOutlined />,
+          label: 'My Requests',
+        },
+        {
+          key: '/leave/balance',
+          icon: <WalletOutlined />,
+          label: 'Leave Balance',
+        },
+      ],
     },
     ...(isAdmin
       ? [
@@ -51,6 +113,30 @@ export const AdminLayout: React.FC = () => {
             label: 'Departments',
           },
           {
+            key: '/admin/shifts',
+            icon: <ClockCircleOutlined />,
+            label: 'Shift Management',
+          },
+          {
+            key: '/admin/holidays',
+            icon: <CalendarOutlined />,
+            label: 'Holidays',
+          },
+          ...(isManager
+            ? [
+                {
+                  key: '/leave/approvals',
+                  icon: <CheckCircleOutlined />,
+                  label: 'Leave Approvals',
+                },
+              ]
+            : []),
+          {
+            key: '/reports/attendance',
+            icon: <BarChartOutlined />,
+            label: 'Attendance Reports',
+          },
+          {
             key: '/admin/users',
             icon: <UserOutlined />,
             label: 'User Management',
@@ -61,13 +147,7 @@ export const AdminLayout: React.FC = () => {
             label: 'Settings',
           },
         ]
-      : [
-          {
-            key: '/dashboard',
-            icon: <DashboardOutlined />,
-            label: 'My Dashboard',
-          },
-        ]),
+      : []),
   ];
 
   const handleMenuClick: MenuProps['onClick'] = ({ key }) => {

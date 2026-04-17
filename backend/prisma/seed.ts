@@ -1,4 +1,4 @@
-import { PrismaClient, EmployeeStatus, ContractType } from "@prisma/client";
+import { PrismaClient, EmployeeStatus, ContractType, LeaveTypeCategory, HolidayType } from "@prisma/client";
 import * as bcrypt from "bcrypt";
 
 const prisma = new PrismaClient();
@@ -254,6 +254,114 @@ async function main() {
   }
 
   console.log("Employee codes assigned.");
+
+  // ==================== SPRINT 2: ATTENDANCE, LEAVE & TIME ====================
+
+  // 8. Create shifts
+  const standardShift = await prisma.shift.upsert({
+    where: { tenantId_code: { tenantId: tenant.id, code: "STD" } },
+    update: {},
+    create: {
+      tenantId: tenant.id,
+      name: "Standard Office Hours",
+      code: "STD",
+      description: "9 AM - 6 PM with 1 hour lunch break",
+      type: "FIXED",
+      startTime: "09:00",
+      endTime: "18:00",
+      breakStart: "12:00",
+      breakEnd: "13:00",
+      breakMinutes: 60,
+      workHours: 8,
+      lateThreshold: 15,
+      earlyLeaveThreshold: 15,
+      color: "#4CAF50",
+      isDefault: true,
+    },
+  });
+  console.log(`Shift created: ${standardShift.name}`);
+
+  const morningShift = await prisma.shift.upsert({
+    where: { tenantId_code: { tenantId: tenant.id, code: "MOR" } },
+    update: {},
+    create: {
+      tenantId: tenant.id,
+      name: "Morning Shift",
+      code: "MOR",
+      description: "7 AM - 3 PM",
+      type: "FIXED",
+      startTime: "07:00",
+      endTime: "15:00",
+      breakStart: "11:00",
+      breakEnd: "11:30",
+      breakMinutes: 30,
+      workHours: 7.5,
+      lateThreshold: 10,
+      earlyLeaveThreshold: 10,
+      color: "#2196F3",
+    },
+  });
+  console.log(`Shift created: ${morningShift.name}`);
+
+  // 9. Create leave types
+  const leaveTypes = [
+    { name: "Annual Leave", category: LeaveTypeCategory.ANNUAL, annualDays: 12, accrualRate: 1, carryOverLimit: 5, color: "#4CAF50", sortOrder: 1 },
+    { name: "Sick Leave", category: LeaveTypeCategory.SICK, annualDays: 10, accrualRate: 0.83, carryOverLimit: 3, requiresAttachment: true, color: "#FF9800", sortOrder: 2 },
+    { name: "Maternity Leave", category: LeaveTypeCategory.MATERNITY, annualDays: 180, accrualRate: 0, carryOverLimit: 0, requiresAttachment: true, color: "#E91E63", sortOrder: 3 },
+    { name: "Paternity Leave", category: LeaveTypeCategory.PATERNITY, annualDays: 14, accrualRate: 0, carryOverLimit: 0, requiresAttachment: false, color: "#9C27B0", sortOrder: 4 },
+    { name: "Unpaid Leave", category: LeaveTypeCategory.UNPAID, annualDays: 0, accrualRate: 0, carryOverLimit: 0, unpaid: true, requiresReason: true, color: "#9E9E9E", sortOrder: 5 },
+    { name: "Compensatory Leave", category: LeaveTypeCategory.COMPENSATORY, annualDays: 0, accrualRate: 0, carryOverLimit: 10, color: "#00BCD4", sortOrder: 6 },
+    { name: "Bereavement Leave", category: LeaveTypeCategory.BEREAVEMENT, annualDays: 5, accrualRate: 0, carryOverLimit: 0, color: "#607D8B", sortOrder: 7 },
+    { name: "Marriage Leave", category: LeaveTypeCategory.MARRIAGE, annualDays: 3, accrualRate: 0, carryOverLimit: 0, color: "#FF5722", sortOrder: 8 },
+  ];
+
+  for (const lt of leaveTypes) {
+    await prisma.leaveType.upsert({
+      where: { tenantId_category: { tenantId: tenant.id, category: lt.category } },
+      update: {},
+      create: {
+        tenantId: tenant.id,
+        name: lt.name,
+        category: lt.category,
+        annualDays: lt.annualDays,
+        accrualRate: lt.accrualRate,
+        carryOverLimit: lt.carryOverLimit,
+        requiresAttachment: lt.requiresAttachment || false,
+        requiresReason: lt.requiresReason !== undefined ? lt.requiresReason : true,
+        unpaid: lt.unpaid || false,
+        color: lt.color,
+        sortOrder: lt.sortOrder,
+      },
+    });
+    console.log(`Leave type created: ${lt.name}`);
+  }
+
+  // 10. Create holidays for current year
+  const currentYear = new Date().getFullYear();
+  const holidays = [
+    { name: "New Year's Day", date: new Date(currentYear, 0, 1), type: HolidayType.PUBLIC, isRecurring: true },
+    { name: "Independence Day", date: new Date(currentYear, 6, 4), type: HolidayType.PUBLIC, isRecurring: true },
+    { name: "Labor Day", date: new Date(currentYear, 8, 1), type: HolidayType.PUBLIC, isRecurring: true },
+    { name: "Christmas Day", date: new Date(currentYear, 11, 25), type: HolidayType.PUBLIC, isRecurring: true },
+    { name: "Company Anniversary", date: new Date(currentYear, 3, 15), type: HolidayType.COMPANY, isRecurring: true },
+    { name: "Team Building Day", date: new Date(currentYear, 5, 20), type: HolidayType.COMPANY, isRecurring: false },
+  ];
+
+  for (const h of holidays) {
+    await prisma.holiday.upsert({
+      where: { tenantId_date_name: { tenantId: tenant.id, date: h.date, name: h.name } },
+      update: {},
+      create: {
+        tenantId: tenant.id,
+        name: h.name,
+        date: h.date,
+        type: h.type,
+        isRecurring: h.isRecurring,
+        isActive: true,
+      },
+    });
+    console.log(`Holiday created: ${h.name}`);
+  }
 
   console.log("\nDatabase seeding completed successfully!");
   console.log("\nLogin credentials:");

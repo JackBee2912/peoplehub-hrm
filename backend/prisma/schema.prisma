@@ -1,4 +1,4 @@
-// PeopleHub HRM System - Prisma Schema (Sprint 1)
+// PeopleHub HRM System - Prisma Schema (Sprint 2)
 generator client {
   provider = "prisma-client-js"
 }
@@ -38,6 +38,59 @@ enum ContractType {
   FREELANCE
 }
 
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  EARLY_LEAVE
+  HALF_DAY
+  ON_LEAVE
+  REMOTE
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum LeaveTypeCategory {
+  ANNUAL
+  SICK
+  MATERNITY
+  PATERNITY
+  UNPAID
+  COMPENSATORY
+  BEREAVEMENT
+  MARRIAGE
+  CUSTOM
+}
+
+enum ShiftType {
+  FIXED
+  ROTATING
+  FLEXIBLE
+  CUSTOM
+}
+
+enum HolidayType {
+  PUBLIC
+  COMPANY
+  DEPARTMENT
+  OPTIONAL
+}
+
+enum CheckInOutType {
+  CHECK_IN
+  CHECK_OUT
+}
+
+enum ApprovalAction {
+  APPROVED
+  REJECTED
+}
+
 // ============================================================
 // MULTI-TENANCY
 // ============================================================
@@ -62,6 +115,9 @@ model Tenant {
   departments  Department[]
   positions    Position[]
   employees    Employee[]
+  leaveTypes   LeaveType[]
+  shifts       Shift[]
+  holidays     Holiday[]
 }
 
 // ============================================================
@@ -236,4 +292,205 @@ model Employee {
   @@index([tenantId, departmentId])
   @@index([tenantId, isDeleted])
   @@index([employeeCode])
+
+  attendanceLogs    AttendanceLog[]
+  shiftAssignments  ShiftAssignment[]
+  leaveBalances     LeaveBalance[]
+  leaveRequests     LeaveRequest[]        @relation("LeaveRequestEmployee")
+  approvedLeaves    LeaveRequest[]        @relation("LeaveRequestApprover")
+}
+
+// ============================================================
+// SHIFT MANAGEMENT
+// ============================================================
+
+model Shift {
+  id              String     @id @default(uuid())
+  tenantId        String
+  tenant          Tenant     @relation(fields: [tenantId], references: [id])
+  name            String
+  code            String?
+  description     String?
+  type            ShiftType  @default(FIXED)
+  startTime       String     // "09:00"
+  endTime         String     // "18:00"
+  breakStart      String?    // "12:00"
+  breakEnd        String?    // "13:00"
+  breakMinutes    Int        @default(60)
+  workHours       Float      @default(8.0)
+  lateThreshold   Int        @default(15)  // minutes before considered late
+  earlyLeaveThreshold Int    @default(15)  // minutes before considered early leave
+  color           String?    // UI color hex
+  isActive        Boolean    @default(true)
+  isDefault       Boolean    @default(false)
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  assignments     ShiftAssignment[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+  @@index([tenantId, isActive])
+}
+
+model ShiftAssignment {
+  id          String   @id @default(uuid())
+  tenantId    String
+  employeeId  String
+  employee    Employee @relation(fields: [employeeId], references: [id])
+  shiftId     String
+  shift       Shift    @relation(fields: [shiftId], references: [id])
+  startDate   DateTime // effective start date
+  endDate     DateTime? // null = ongoing
+  dayOfWeek   Int?     // 0=Sun, 1=Mon... for rotating shifts
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([employeeId, shiftId, startDate])
+  @@index([tenantId])
+  @@index([employeeId])
+  @@index([shiftId])
+}
+
+// ============================================================
+// ATTENDANCE
+// ============================================================
+
+model AttendanceLog {
+  id              String           @id @default(uuid())
+  tenantId        String
+  employeeId      String
+  employee        Employee         @relation(fields: [employeeId], references: [id])
+  date            DateTime         // date-only (truncated)
+  checkInTime     DateTime?
+  checkOutTime    DateTime?
+  type            CheckInOutType   @default(CHECK_IN)
+  status          AttendanceStatus @default(PRESENT)
+  workHours       Float?           // calculated worked hours
+  lateMinutes     Int              @default(0)
+  earlyLeaveMinutes Int            @default(0)
+  overtimeMinutes Int              @default(0)
+  ipAddress       String?
+  location        String?          // GPS or location name
+  notes           String?
+  shiftId         String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@unique([employeeId, date])
+  @@index([tenantId])
+  @@index([employeeId])
+  @@index([date])
+  @@index([tenantId, date])
+  @@index([employeeId, date])
+}
+
+// ============================================================
+// LEAVE MANAGEMENT
+// ============================================================
+
+model LeaveType {
+  id              String            @id @default(uuid())
+  tenantId        String
+  tenant          Tenant            @relation(fields: [tenantId], references: [id])
+  name            String
+  category        LeaveTypeCategory @default(ANNUAL)
+  description     String?
+  color           String?           // UI color
+  icon            String?
+  annualDays      Float             @default(0)  // days per year
+  accrualRate     Float             @default(0)  // days per month
+  carryOverLimit  Float             @default(0)  // max days carried over
+  carryOverExpiry String?           // "03-31" means expires March 31
+  maxConsecutiveDays Int?           // max consecutive days allowed
+  requiresAttachment Boolean        @default(false)
+  requiresReason  Boolean           @default(true)
+  unpaid          Boolean           @default(false)
+  isActive        Boolean           @default(true)
+  sortOrder       Int               @default(0)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  balances        LeaveBalance[]
+  leaveRequests   LeaveRequest[]
+
+  @@unique([tenantId, category])
+  @@index([tenantId])
+  @@index([tenantId, isActive])
+}
+
+model LeaveBalance {
+  id              String    @id @default(uuid())
+  tenantId        String
+  employeeId      String
+  employee        Employee  @relation(fields: [employeeId], references: [id])
+  leaveTypeId     String
+  leaveType       LeaveType @relation(fields: [leaveTypeId], references: [id])
+  year            Int       // balance year
+  totalAccrued    Float     @default(0)  // total earned this year
+  used            Float     @default(0)  // total used this year
+  carriedOver     Float     @default(0)  // carried from previous year
+  adjusted        Float     @default(0)  // manual adjustments
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([employeeId, leaveTypeId, year])
+  @@index([tenantId])
+  @@index([employeeId])
+  @@index([leaveTypeId])
+}
+
+model LeaveRequest {
+  id              String      @id @default(uuid())
+  tenantId        String
+  employeeId      String
+  employee        Employee    @relation("LeaveRequestEmployee", fields: [employeeId], references: [id])
+  leaveTypeId     String
+  leaveType       LeaveType   @relation(fields: [leaveTypeId], references: [id])
+  startDate       DateTime
+  endDate         DateTime
+  startHalfDay    Boolean     @default(false)  // first half day
+  endHalfDay      Boolean     @default(false)  // last half day
+  reason          String
+  attachmentUrl   String?
+  status          LeaveStatus @default(PENDING)
+  totalDays       Float       // calculated business days
+  approverId      String?
+  approver        Employee?   @relation("LeaveRequestApprover", fields: [approverId], references: [id])
+  approvalDate    DateTime?
+  approvalComment String?
+  rejectionReason String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@index([tenantId])
+  @@index([employeeId])
+  @@index([leaveTypeId])
+  @@index([status])
+  @@index([tenantId, status])
+  @@index([approverId])
+}
+
+// ============================================================
+// HOLIDAYS
+// ============================================================
+
+model Holiday {
+  id              String      @id @default(uuid())
+  tenantId        String
+  tenant          Tenant      @relation(fields: [tenantId], references: [id])
+  name            String
+  description     String?
+  date            DateTime    // holiday date
+  type            HolidayType @default(PUBLIC)
+  isRecurring     Boolean     @default(false) // repeats yearly
+  departmentId    String?
+  isActive        Boolean     @default(true)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@unique([tenantId, date, name])
+  @@index([tenantId])
+  @@index([date])
+  @@index([tenantId, isActive])
 }

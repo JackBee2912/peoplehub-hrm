@@ -9,6 +9,12 @@ import { DepartmentModule } from "./department/department.module";
 import { PositionModule } from "./position/position.module";
 import { RoleModule } from "./role/role.module";
 import { HealthModule } from "./common/health.module";
+import { AttendanceModule } from "./attendance/attendance.module";
+import { ShiftModule } from "./shift/shift.module";
+import { LeaveModule } from "./leave/leave.module";
+import { HolidayModule } from "./holiday/holiday.module";
+import { DashboardModule } from "./dashboard/dashboard.module";
+import { SchedulerModule } from "./scheduler/scheduler.module";
 
 @Module({
   imports: [
@@ -29,6 +35,12 @@ import { HealthModule } from "./common/health.module";
     PositionModule,
     RoleModule,
     HealthModule,
+    AttendanceModule,
+    ShiftModule,
+    LeaveModule,
+    HolidayModule,
+    DashboardModule,
+    SchedulerModule,
   ],
   providers: [
     {
