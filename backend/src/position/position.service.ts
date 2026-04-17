@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { Injectable, NotFoundException, BadRequestException } from "@nestjs/common";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { CreatePositionDto, UpdatePositionDto } from "./dto/position.dto";
 import { PaginationDto, buildPaginatedResult } from "../common/dto/pagination.dto";
@@ -45,6 +45,11 @@ export class PositionService {
   }
 
   async create(tenantId: string, dto: CreatePositionDto) {
+    // Validate salary range
+    if (dto.minSalary !== undefined && dto.maxSalary !== undefined && dto.minSalary > dto.maxSalary) {
+      throw new BadRequestException("Minimum salary cannot exceed maximum salary");
+    }
+
     // Validate department exists if provided
     if (dto.departmentId) {
       const dept = await this.prisma.department.findFirst({
@@ -83,6 +88,13 @@ export class PositionService {
 
     if (!existing) {
       throw new NotFoundException("Position not found");
+    }
+
+    // Validate salary range
+    const minSalary = dto.minSalary !== undefined ? dto.minSalary : (existing.minSalary as number);
+    const maxSalary = dto.maxSalary !== undefined ? dto.maxSalary : (existing.maxSalary as number);
+    if (minSalary !== undefined && maxSalary !== undefined && minSalary > maxSalary) {
+      throw new BadRequestException("Minimum salary cannot exceed maximum salary");
     }
 
     // Validate department exists if provided

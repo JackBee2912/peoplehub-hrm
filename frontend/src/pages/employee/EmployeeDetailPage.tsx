@@ -67,8 +67,8 @@ const EmployeeDetailPage: React.FC = () => {
               .filter(Boolean)
               .join(', ') || '-'}
           </Descriptions.Item>
-          <Descriptions.Item label="Emergency Contact">{employee.emergencyContact || '-'}</Descriptions.Item>
-          <Descriptions.Item label="Emergency Phone">{employee.emergencyPhone || '-'}</Descriptions.Item>
+          <Descriptions.Item label="Emergency Contact">{(employee as any).emergencyContactName || '-'}</Descriptions.Item>
+          <Descriptions.Item label="Emergency Phone">{(employee as any).emergencyContactPhone || '-'}</Descriptions.Item>
         </Descriptions>
       ),
     },

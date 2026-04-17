@@ -32,8 +32,10 @@ const employeeSchema = z.object({
   probationEndDate: z.string().optional(),
   bankName: z.string().optional(),
   bankAccount: z.string().optional(),
-  emergencyContact: z.string().optional(),
-  emergencyPhone: z.string().optional(),
+  emergencyContactName: z.string().optional(),
+  emergencyContactPhone: z.string().optional(),
+  emergencyContactRelation: z.string().optional(),
+  notes: z.string().optional(),
 });
 
 type EmployeeFormValues = z.infer<typeof employeeSchema>;
@@ -93,8 +95,10 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
       probationEndDate: '',
       bankName: '',
       bankAccount: '',
-      emergencyContact: '',
-      emergencyPhone: '',
+      emergencyContactName: '',
+      emergencyContactPhone: '',
+      emergencyContactRelation: '',
+      notes: '',
     },
   });
 
@@ -123,8 +127,10 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
         probationEndDate: employee.probationEndDate ? new Date(employee.probationEndDate).toISOString().split('T')[0] : '',
         bankName: employee.bankName || '',
         bankAccount: employee.bankAccount || '',
-        emergencyContact: employee.emergencyContact || '',
-        emergencyPhone: employee.emergencyPhone || '',
+        emergencyContactName: (employee as any).emergencyContactName || '',
+        emergencyContactPhone: (employee as any).emergencyContactPhone || '',
+        emergencyContactRelation: (employee as any).emergencyContactRelation || '',
+        notes: (employee as any).notes || '',
       });
     } else {
       reset({
@@ -150,8 +156,10 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
         probationEndDate: '',
         bankName: '',
         bankAccount: '',
-        emergencyContact: '',
-        emergencyPhone: '',
+        emergencyContactName: '',
+        emergencyContactPhone: '',
+        emergencyContactRelation: '',
+        notes: '',
       });
     }
   }, [employee, reset, open]);

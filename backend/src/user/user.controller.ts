@@ -38,7 +38,7 @@ export class UserController {
   @ApiOperation({ summary: "List all users (admin only)" })
   async findAll(
     @CurrentUser() user: CurrentUserType,
-    pagination: PaginationDto,
+    @Query() pagination: PaginationDto,
   ) {
     const result = await this.userService.findAll(user.tenantId, pagination, user.role as UserRole);
     return successResponse(result.data, result.meta);

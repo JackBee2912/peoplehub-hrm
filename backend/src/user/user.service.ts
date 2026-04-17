@@ -34,31 +34,38 @@ export class UserService {
   async updateProfile(userId: string, tenantId: string, dto: UpdateUserDto) {
     const user = await this.prisma.user.findFirst({
       where: { id: userId, tenantId },
+      include: { employee: true },
     });
 
     if (!user) {
       throw new NotFoundException("User not found");
     }
 
-    const updateData: any = {};
-    if (dto.firstName !== undefined) updateData.firstName = dto.firstName;
-    if (dto.lastName !== undefined) updateData.lastName = dto.lastName;
-    if (dto.phone !== undefined) updateData.phone = dto.phone;
-
-    // Update related employee record if exists
-    if (dto.firstName || dto.lastName) {
-      await this.prisma.employee.updateMany({
-        where: { userId },
+    // Update related employee record if it exists
+    if (user.employee && (dto.firstName || dto.lastName || dto.phone)) {
+      await this.prisma.employee.update({
+        where: { id: user.employee.id },
         data: {
           ...(dto.firstName && { firstName: dto.firstName }),
           ...(dto.lastName && { lastName: dto.lastName }),
+          ...(dto.phone && { phone: dto.phone }),
         },
       });
+    }
+
+    // Update user settings if provided
+    const updateData: any = {};
+    if (dto.phone !== undefined) {
+      updateData.settings = {
+        ...(user.settings as Record<string, unknown>),
+        phone: dto.phone,
+      };
     }
 
     const updated = await this.prisma.user.update({
       where: { id: userId },
       data: updateData,
+      include: { employee: { select: { id: true, firstName: true, lastName: true, phone: true } } },
       select: {
         id: true,
         email: true,
@@ -69,6 +76,7 @@ export class UserService {
         createdAt: true,
         updatedAt: true,
         settings: true,
+        employee: { select: { id: true, firstName: true, lastName: true, phone: true } },
       },
     });
 

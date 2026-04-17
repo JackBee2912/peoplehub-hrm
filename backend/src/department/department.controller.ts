@@ -24,11 +24,18 @@ import { UserRole } from "@prisma/client";
 export class DepartmentController {
   constructor(private departmentService: DepartmentService) {}
 
-  @Get()
+  @Get("tree")
   @ApiOperation({ summary: "Get department tree structure" })
   async findAllTree(@CurrentUser() user: CurrentUserType) {
     const tree = await this.departmentService.findAllTree(user.tenantId);
     return successResponse(tree);
+  }
+
+  @Get()
+  @ApiOperation({ summary: "List departments (flat)" })
+  async findAll(@CurrentUser() user: CurrentUserType) {
+    const departments = await this.departmentService.findAll(user.tenantId);
+    return successResponse(departments);
   }
 
   @Get(":id")

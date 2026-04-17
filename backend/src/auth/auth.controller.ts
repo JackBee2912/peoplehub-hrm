@@ -5,6 +5,7 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  BadRequestException,
 } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiResponse } from "@nestjs/swagger";
 import { AuthService } from "./auth.service";
@@ -44,7 +45,7 @@ export class AuthController {
   @ApiResponse({ status: 401, description: "Invalid refresh token" })
   async refresh(@Body("refreshToken") refreshToken: string) {
     if (!refreshToken) {
-      throw new Error("refreshToken is required");
+      throw new BadRequestException("refreshToken is required");
     }
     const result = await this.authService.refreshToken(refreshToken);
     return successResponse(result);

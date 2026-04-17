@@ -45,6 +45,27 @@ export class DepartmentService {
     return this.buildTree(departments);
   }
 
+  async findAll(tenantId: string) {
+    return this.prisma.department.findMany({
+      where: { tenantId, isActive: true },
+      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+      select: {
+        id: true,
+        name: true,
+        code: true,
+        description: true,
+        parentId: true,
+        managerId: true,
+        budget: true,
+        costCenter: true,
+        isActive: true,
+        sortOrder: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+  }
+
   async findById(id: string, tenantId: string) {
     const department = await this.prisma.department.findFirst({
       where: { id, tenantId },
@@ -108,13 +129,17 @@ export class DepartmentService {
       throw new BadRequestException("A department cannot be its own parent");
     }
 
-    // Validate parent exists if provided
+    // Prevent creating circular hierarchy
     if (dto.parentId) {
       const parent = await this.prisma.department.findFirst({
         where: { id: dto.parentId, tenantId },
       });
       if (!parent) {
         throw new NotFoundException("Parent department not found");
+      }
+      // Check if the new parent is a descendant of the current department
+      if (await this.isDescendant(dto.parentId, id, tenantId)) {
+        throw new BadRequestException("Cannot set a descendant department as parent (circular reference)");
       }
     }
 
@@ -144,7 +169,7 @@ export class DepartmentService {
   async remove(id: string, tenantId: string) {
     const existing = await this.prisma.department.findFirst({
       where: { id, tenantId },
-      include: { children: true },
+      include: { children: true, employees: { where: { isDeleted: false }, take: 1 } },
     });
 
     if (!existing) {
@@ -153,6 +178,10 @@ export class DepartmentService {
 
     if (existing.children.length > 0) {
       throw new BadRequestException("Cannot delete a department with child departments. Reassign or delete children first.");
+    }
+
+    if (existing.employees.length > 0) {
+      throw new BadRequestException("Cannot delete a department with assigned employees. Reassign employees first.");
     }
 
     const department = await this.prisma.department.delete({
@@ -182,5 +211,24 @@ export class DepartmentService {
     }
 
     return roots;
+  }
+
+  private async isDescendant(potentialDescendantId: string, ancestorId: string, tenantId: string): Promise<boolean> {
+    let currentId: string | null = potentialDescendantId;
+    const visited = new Set<string>();
+
+    while (currentId) {
+      if (currentId === ancestorId) return true;
+      if (visited.has(currentId)) break; // Safety against existing cycles
+      visited.add(currentId);
+
+      const dept = await this.prisma.department.findFirst({
+        where: { id: currentId, tenantId },
+        select: { parentId: true },
+      });
+      currentId = dept?.parentId ?? null;
+    }
+
+    return false;
   }
 }

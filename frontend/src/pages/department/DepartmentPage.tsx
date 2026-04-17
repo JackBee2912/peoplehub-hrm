@@ -44,72 +44,34 @@ const DepartmentPage: React.FC = () => {
     await deleteMutation.mutateAsync(id);
   };
 
-  const treeData = departments?.map((dept) => ({
-    key: dept.id,
-    title: (
-      <Space>
-        <ApartmentOutlined />
-        <strong>{dept.name}</strong>
-        {dept.code && <span style={{ color: '#8c8c8c' }}>({dept.code})</span>}
-        {dept.employeeCount !== undefined && dept.employeeCount > 0 && (
-          <span style={{ color: '#1677ff' }}>{dept.employeeCount} employees</span>
-        )}
-        <Space size="small">
-          <Button type="text" size="small" icon={<EditOutlined />} onClick={(e) => { e.stopPropagation(); handleEdit(dept); }} />
-          <Popconfirm
-            title="Delete Department"
-            description="Are you sure?"
-            onConfirm={(e) => { e?.stopPropagation(); handleDelete(dept.id); }}
-          >
-            <Button type="text" size="small" danger icon={<DeleteOutlined />} onClick={(e) => e.stopPropagation()} />
-          </Popconfirm>
-        </Space>
-      </Space>
-    ),
-    children: dept.children?.map((child) => ({
-      key: child.id,
+  const buildTreeData = (depts: Dept[]): any[] => {
+    return depts.map((dept) => ({
+      key: dept.id,
       title: (
         <Space>
           <ApartmentOutlined />
-          <strong>{child.name}</strong>
-          {child.code && <span style={{ color: '#8c8c8c' }}>({child.code})</span>}
-          {child.employeeCount !== undefined && child.employeeCount > 0 && (
-            <span style={{ color: '#1677ff' }}>{child.employeeCount} employees</span>
+          <strong>{dept.name}</strong>
+          {dept.code && <span style={{ color: '#8c8c8c' }}>({dept.code})</span>}
+          {dept.employeeCount !== undefined && dept.employeeCount > 0 && (
+            <span style={{ color: '#1677ff' }}>{dept.employeeCount} employees</span>
           )}
           <Space size="small">
-            <Button type="text" size="small" icon={<EditOutlined />} onClick={(e) => { e.stopPropagation(); handleEdit(child); }} />
+            <Button type="text" size="small" icon={<EditOutlined />} onClick={(e) => { e.stopPropagation(); handleEdit(dept); }} />
             <Popconfirm
               title="Delete Department"
               description="Are you sure?"
-              onConfirm={(e) => { e?.stopPropagation(); handleDelete(child.id); }}
+              onConfirm={(e) => { e?.stopPropagation(); handleDelete(dept.id); }}
             >
               <Button type="text" size="small" danger icon={<DeleteOutlined />} onClick={(e) => e.stopPropagation()} />
             </Popconfirm>
           </Space>
         </Space>
       ),
-      children: child.children?.map((grandchild) => ({
-        key: grandchild.id,
-        title: (
-          <Space>
-            <ApartmentOutlined />
-            <strong>{grandchild.name}</strong>
-            {grandchild.code && <span style={{ color: '#8c8c8c' }}>({grandchild.code})</span>}
-            <Space size="small">
-              <Button type="text" size="small" icon={<EditOutlined />} onClick={(e) => { e.stopPropagation(); handleEdit(grandchild); }} />
-              <Popconfirm
-                title="Delete Department"
-                description="Are you sure?"
-                onConfirm={(e) => { e?.stopPropagation(); handleDelete(grandchild.id); }}
-              >
-                <Button type="text" size="small" danger icon={<DeleteOutlined />} onClick={(e) => e.stopPropagation()} />
-              </Popconfirm>
-            </Space>
-          </Space>
-        ),
-      })),
-    })),
-  }));
+      children: dept.children ? buildTreeData(dept.children) : undefined,
+    }));
+  };
+
+  const treeData = departments ? buildTreeData(departments) : [];
 
   return (
     <div>

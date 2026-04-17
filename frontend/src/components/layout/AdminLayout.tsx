@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useNavigate } from 'react-router-dom';
 import { Layout, Menu, Avatar, Dropdown, Space, Typography, Badge } from 'antd';
 import {
   DashboardOutlined,
@@ -27,6 +27,7 @@ interface MenuItem {
 
 export const AdminLayout: React.FC = () => {
   const { user, logout } = useAuthStore();
+  const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
 
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'HR_MANAGER';
@@ -70,7 +71,7 @@ export const AdminLayout: React.FC = () => {
   ];
 
   const handleMenuClick: MenuProps['onClick'] = ({ key }) => {
-    window.location.href = key;
+    navigate(key);
   };
 
   const userMenuItems: MenuProps['items'] = [
@@ -93,7 +94,7 @@ export const AdminLayout: React.FC = () => {
       label: 'Logout',
       onClick: () => {
         logout();
-        window.location.href = '/login';
+        navigate('/login', { replace: true });
       },
     },
   ];

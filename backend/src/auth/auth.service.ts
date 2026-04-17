@@ -64,14 +64,6 @@ export class AuthService {
   }
 
   async register(dto: RegisterDto) {
-    const existingUser = await this.prisma.user.findFirst({
-      where: { email: dto.email },
-    });
-
-    if (existingUser) {
-      throw new ConflictException("Email already registered");
-    }
-
     // Find or create default tenant
     let tenantId: string;
     const tenantSlug = dto.tenantSlug || "default";
@@ -85,6 +77,15 @@ export class AuthService {
       });
     }
     tenantId = tenant.id;
+
+    // Check for existing user within this tenant
+    const existingUser = await this.prisma.user.findFirst({
+      where: { email: dto.email, tenantId },
+    });
+
+    if (existingUser) {
+      throw new ConflictException("Email already registered in this organization");
+    }
 
     const passwordHash = await bcrypt.hash(
       dto.password,
@@ -124,7 +125,7 @@ export class AuthService {
         role: user.role,
         tenantId: user.tenantId,
       },
-      ...tokens,
+      tokens,
     };
   }
 
@@ -181,17 +182,18 @@ export class AuthService {
     });
 
     const refreshTokenValue = uuidv4();
+    const refreshTokenExpiration = this.configService.get("JWT_REFRESH_EXPIRATION", "7d");
     const refreshToken = await this.jwtService.signAsync(
       { sub: user.id, token: refreshTokenValue },
       {
         secret: privateKey,
-        expiresIn: this.configService.get("JWT_REFRESH_EXPIRATION", "7d"),
+        expiresIn: refreshTokenExpiration,
         algorithm: "RS256",
       },
     );
 
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7);
+    // Parse expiration string to calculate DB expiresAt
+    const expiresAt = this.parseExpirationToDuration(refreshTokenExpiration);
 
     await this.prisma.refreshToken.create({
       data: {
@@ -202,5 +204,24 @@ export class AuthService {
     });
 
     return { accessToken, refreshToken };
+  }
+
+  private parseExpirationToDuration(expiration: string): Date {
+    const now = new Date();
+    const match = expiration.match(/^(\d+)([smhd])$/);
+    if (!match) {
+      // Default to 7 days
+      now.setDate(now.getDate() + 7);
+      return now;
+    }
+    const value = parseInt(match[1], 10);
+    const unit = match[2];
+    switch (unit) {
+      case "s": now.setSeconds(now.getSeconds() + value); break;
+      case "m": now.setMinutes(now.getMinutes() + value); break;
+      case "h": now.setHours(now.getHours() + value); break;
+      case "d": now.setDate(now.getDate() + value); break;
+    }
+    return now;
   }
 }

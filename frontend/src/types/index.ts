@@ -19,7 +19,6 @@ export interface User {
 export interface AuthTokens {
   accessToken: string;
   refreshToken: string;
-  expiresIn: number;
 }
 
 export interface LoginCredentials {
@@ -29,7 +28,12 @@ export interface LoginCredentials {
 }
 
 export interface LoginResponse {
-  user: User;
+  user: {
+    id: string;
+    email: string;
+    role: UserRole;
+    tenantId: string;
+  };
   tokens: AuthTokens;
 }
 
@@ -83,14 +87,28 @@ export interface Employee {
   positionId?: string;
   position?: Position;
   managerId?: string;
-  manager?: Employee;
+  manager?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+  directReports?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    status: EmployeeStatus;
+  }[];
   hireDate?: string;
   probationEndDate?: string;
   terminationDate?: string;
   bankName?: string;
   bankAccount?: string;
-  emergencyContact?: string;
-  emergencyPhone?: string;
+  emergencyContactName?: string;
+  emergencyContactPhone?: string;
+  emergencyContactRelation?: string;
+  notes?: string;
   createdAt: string;
   updatedAt: string;
 }

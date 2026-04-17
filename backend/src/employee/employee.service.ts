@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { Injectable, NotFoundException, BadRequestException } from "@nestjs/common";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { CreateEmployeeDto, UpdateEmployeeDto, EmployeeFilterDto } from "./dto/employee.dto";
 import { PaginationDto, buildPaginatedResult } from "../common/dto/pagination.dto";
@@ -91,6 +91,16 @@ export class EmployeeService {
   async create(tenantId: string, dto: CreateEmployeeDto) {
     const employeeCode = await this.generateEmployeeCode(tenantId);
 
+    // Validate manager exists if provided
+    if (dto.managerId) {
+      const manager = await this.prisma.employee.findFirst({
+        where: { id: dto.managerId, tenantId, isDeleted: false },
+      });
+      if (!manager) {
+        throw new NotFoundException("Manager not found");
+      }
+    }
+
     const employee = await this.prisma.employee.create({
       data: {
         tenantId,
@@ -143,6 +153,21 @@ export class EmployeeService {
 
     if (!existing) {
       throw new NotFoundException("Employee not found");
+    }
+
+    // Prevent setting self as manager
+    if (dto.managerId && dto.managerId === id) {
+      throw new BadRequestException("An employee cannot be their own manager");
+    }
+
+    // Validate manager exists if provided
+    if (dto.managerId) {
+      const manager = await this.prisma.employee.findFirst({
+        where: { id: dto.managerId, tenantId, isDeleted: false },
+      });
+      if (!manager) {
+        throw new NotFoundException("Manager not found");
+      }
     }
 
     const data: any = {};
