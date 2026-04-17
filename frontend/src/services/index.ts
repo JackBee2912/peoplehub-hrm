@@ -9,3 +9,6 @@ export { leaveService } from './leave';
 export { shiftService } from './shift';
 export { holidayService } from './holiday';
 export { managerService } from './manager';
+export { payrollService } from './payroll';
+export { payslipService } from './payslip';
+export { taxService } from './tax';

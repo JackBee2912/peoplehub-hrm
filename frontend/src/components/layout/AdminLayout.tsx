@@ -19,6 +19,9 @@ import {
   WalletOutlined,
   HomeOutlined,
   CheckCircleOutlined,
+  DollarOutlined,
+  FileTextOutlined,
+  AccountBookOutlined,
 } from '@ant-design/icons';
 import { useAuthStore } from '@/stores/authStore';
 import type { MenuProps } from 'antd';
@@ -135,6 +138,43 @@ export const AdminLayout: React.FC = () => {
             key: '/reports/attendance',
             icon: <BarChartOutlined />,
             label: 'Attendance Reports',
+          },
+          {
+            key: 'payroll',
+            icon: <DollarOutlined />,
+            label: 'Payroll',
+            children: [
+              {
+                key: '/payroll/salary-setup',
+                icon: <AccountBookOutlined />,
+                label: 'Salary Setup',
+              },
+              {
+                key: '/payroll/pay-periods',
+                icon: <CalendarOutlined />,
+                label: 'Pay Periods',
+              },
+              {
+                key: '/payroll/runs',
+                icon: <FileTextOutlined />,
+                label: 'Payroll Runs',
+              },
+              {
+                key: '/payroll/tax-rules',
+                icon: <SettingOutlined />,
+                label: 'Tax Rules',
+              },
+              {
+                key: '/payroll/reports',
+                icon: <BarChartOutlined />,
+                label: 'Payroll Reports',
+              },
+            ],
+          },
+          {
+            key: '/payroll/payslips',
+            icon: <FileTextOutlined />,
+            label: 'My Payslips',
           },
           {
             key: '/admin/users',

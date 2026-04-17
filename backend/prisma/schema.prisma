@@ -92,6 +92,44 @@ enum ApprovalAction {
 }
 
 // ============================================================
+// PAYROLL ENUMS
+// ============================================================
+
+enum SalaryComponentType {
+  BASE
+  ALLOWANCE
+  DEDUCTION
+  BONUS
+}
+
+enum PayPeriodType {
+  MONTHLY
+  BIWEEKLY
+  WEEKLY
+}
+
+enum PayPeriodStatus {
+  OPEN
+  CLOSED
+  LOCKED
+}
+
+enum PayrollRunStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  PROCESSED
+  PAID
+  FAILED
+}
+
+enum PayslipStatus {
+  DRAFT
+  ISSUED
+  VIEWED
+}
+
+// ============================================================
 // MULTI-TENANCY
 // ============================================================
 
@@ -118,6 +156,11 @@ model Tenant {
   leaveTypes   LeaveType[]
   shifts       Shift[]
   holidays     Holiday[]
+  salaryComponents SalaryComponent[]
+  taxRules     TaxRule[]
+  payPeriods   PayPeriod[]
+  payrollRuns  PayrollRun[]
+  payslips     Payslip[]
 }
 
 // ============================================================
@@ -148,6 +191,8 @@ model User {
   sessions       Session[]
   refreshTokens  RefreshToken[]
   managedDepartments Department[] @relation("DepartmentManager")
+  createdPayrollRuns PayrollRun[]  @relation("PayrollRunCreator")
+  approvedPayrollRuns PayrollRun[] @relation("PayrollRunApprover")
 
   @@unique([tenantId, email])
   @@index([tenantId, role])
@@ -298,6 +343,9 @@ model Employee {
   leaveBalances     LeaveBalance[]
   leaveRequests     LeaveRequest[]        @relation("LeaveRequestEmployee")
   approvedLeaves    LeaveRequest[]        @relation("LeaveRequestApprover")
+  salaryComponents  SalaryComponent[]
+  payrollRecords    PayrollRecord[]
+  payslips          Payslip[]
 }
 
 // ============================================================
@@ -493,4 +541,153 @@ model Holiday {
   @@index([tenantId])
   @@index([date])
   @@index([tenantId, isActive])
+}
+
+// ============================================================
+// PAYROLL & COMPENSATION
+// ============================================================
+
+model SalaryComponent {
+  id            String               @id @default(uuid())
+  tenantId      String
+  tenant        Tenant               @relation(fields: [tenantId], references: [id])
+  employeeId    String
+  employee      Employee             @relation(fields: [employeeId], references: [id])
+  type          SalaryComponentType
+  name          String               // e.g. "Base Salary", "Meal Allowance", "Housing Allowance"
+  amount        Decimal              @db.Decimal(15, 2)
+  effectiveDate DateTime             // when this component takes effect
+  isActive      Boolean              @default(true)
+  notes         String?
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+
+  @@index([tenantId])
+  @@index([employeeId])
+  @@index([tenantId, type])
+  @@index([tenantId, employeeId, type])
+}
+
+model TaxRule {
+  id            String   @id @default(uuid())
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id])
+  name          String   // e.g. "Personal Income Tax 2026"
+  bracket       Int      // bracket order (1, 2, 3...)
+  rate          Decimal  @db.Decimal(5, 4) // e.g. 0.05 for 5%
+  threshold     Decimal  @db.Decimal(15, 2) // minimum income for this bracket
+  ceiling       Decimal? @db.Decimal(15, 2) // max income for this bracket (null = no ceiling)
+  description   String?
+  effectiveFrom DateTime @default(now())
+  effectiveTo   DateTime?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([tenantId, name, bracket])
+  @@index([tenantId])
+  @@index([tenantId, isActive])
+}
+
+model PayPeriod {
+  id          String         @id @default(uuid())
+  tenantId    String
+  tenant      Tenant         @relation(fields: [tenantId], references: [id])
+  type        PayPeriodType  @default(MONTHLY)
+  year        Int
+  period      Int            // 1-12 for monthly, 1-26 for biweekly, 1-52 for weekly
+  startDate   DateTime
+  endDate     DateTime
+  cutoffDate  DateTime       // last date for changes to be included
+  status      PayPeriodStatus @default(OPEN)
+  notes       String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  payrollRuns PayrollRun[]
+
+  @@unique([tenantId, type, year, period])
+  @@index([tenantId])
+  @@index([tenantId, year, period])
+  @@index([tenantId, status])
+}
+
+model PayrollRun {
+  id              String           @id @default(uuid())
+  tenantId        String
+  tenant          Tenant           @relation(fields: [tenantId], references: [id])
+  payPeriodId     String
+  payPeriod       PayPeriod        @relation(fields: [payPeriodId], references: [id])
+  status          PayrollRunStatus @default(DRAFT)
+  createdBy       String           // userId
+  createdByUser   User             @relation("PayrollRunCreator", fields: [createdBy], references: [id])
+  approvedBy      String?          // userId
+  approvedByUser  User?            @relation("PayrollRunApprover", fields: [approvedBy], references: [id])
+  processedAt     DateTime?
+  notes           String?
+  totalGrossPay   Decimal?         @db.Decimal(18, 2)
+  totalNetPay     Decimal?         @db.Decimal(18, 2)
+  totalDeductions Decimal?         @db.Decimal(18, 2)
+  totalAllowances Decimal?         @db.Decimal(18, 2)
+  totalTax        Decimal?         @db.Decimal(18, 2)
+  totalInsurance  Decimal?         @db.Decimal(18, 2)
+  totalEmployerCost Decimal?       @db.Decimal(18, 2) // employer insurance contribution
+  employeeCount   Int              @default(0)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  records         PayrollRecord[]
+
+  @@index([tenantId])
+  @@index([payPeriodId])
+  @@index([tenantId, status])
+}
+
+model PayrollRecord {
+  id                String   @id @default(uuid())
+  tenantId          String
+  payrollRunId      String
+  payrollRun        PayrollRun @relation(fields: [payrollRunId], references: [id], onDelete: Cascade)
+  employeeId        String
+  employee          Employee @relation(fields: [employeeId], references: [id])
+  grossPay          Decimal  @db.Decimal(15, 2)
+  netPay            Decimal  @db.Decimal(15, 2)
+  totalDeductions   Decimal  @db.Decimal(15, 2)
+  totalAllowances   Decimal  @db.Decimal(15, 2)
+  taxAmount         Decimal  @db.Decimal(15, 2)
+  insuranceEmployee Decimal  @db.Decimal(15, 2) // employee insurance contribution
+  insuranceEmployer Decimal  @db.Decimal(15, 2) // employer insurance contribution
+  overtimePay       Decimal  @db.Decimal(15, 2) @default(0)
+  baseSalary        Decimal  @db.Decimal(15, 2)
+  bonusAmount       Decimal  @db.Decimal(15, 2) @default(0)
+  notes             String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  payslip           Payslip?
+
+  @@unique([payrollRunId, employeeId])
+  @@index([tenantId])
+  @@index([payrollRunId])
+  @@index([employeeId])
+}
+
+model Payslip {
+  id            String       @id @default(uuid())
+  tenantId      String
+  tenant        Tenant       @relation(fields: [tenantId], references: [id])
+  payrollRecordId String     @unique
+  payrollRecord PayrollRecord @relation(fields: [payrollRecordId], references: [id])
+  employeeId    String
+  employee      Employee     @relation(fields: [employeeId], references: [id])
+  pdfPath       String?      // MinIO object key
+  issuedDate    DateTime     @default(now())
+  status        PayslipStatus @default(DRAFT)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([tenantId])
+  @@index([employeeId])
+  @@index([tenantId, employeeId])
+  @@index([tenantId, status])
 }

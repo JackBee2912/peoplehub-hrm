@@ -15,6 +15,7 @@ import { LeaveModule } from "./leave/leave.module";
 import { HolidayModule } from "./holiday/holiday.module";
 import { DashboardModule } from "./dashboard/dashboard.module";
 import { SchedulerModule } from "./scheduler/scheduler.module";
+import { PayrollModule } from "./payroll/payroll.module";
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { SchedulerModule } from "./scheduler/scheduler.module";
     HolidayModule,
     DashboardModule,
     SchedulerModule,
+    PayrollModule,
   ],
   providers: [
     {

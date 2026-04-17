@@ -616,3 +616,309 @@ export interface PendingApprovalSummary {
     createdAt: string;
   }[];
 }
+
+// ============================================================
+// Payroll & Compensation Types
+// ============================================================
+
+export type PayrollStatus =
+  | 'DRAFT'
+  | 'PENDING_APPROVAL'
+  | 'APPROVED'
+  | 'PROCESSED'
+  | 'PAID'
+  | 'FAILED';
+
+export type PayrollRecordStatus =
+  | 'CALCULATED'
+  | 'ADJUSTED'
+  | 'APPROVED'
+  | 'PAID';
+
+export type SalaryComponentType =
+  | 'BASE'
+  | 'ALLOWANCE'
+  | 'DEDUCTION'
+  | 'BONUS'
+  | 'OVERTIME';
+
+export type PayPeriodFrequency = 'WEEKLY' | 'BIWEEKLY' | 'MONTHLY' | 'QUARTERLY';
+
+export interface SalaryComponent {
+  id: string;
+  name: string;
+  code: string;
+  type: SalaryComponentType;
+  description?: string;
+  isFixed: boolean;
+  defaultAmount?: number;
+  isActive: boolean;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateSalaryComponentInput {
+  name: string;
+  code: string;
+  type: SalaryComponentType;
+  description?: string;
+  isFixed?: boolean;
+  defaultAmount?: number;
+  sortOrder?: number;
+}
+
+export interface UpdateSalaryComponentInput extends Partial<CreateSalaryComponentInput> {
+  id: string;
+}
+
+export interface EmployeeSalarySetup {
+  id: string;
+  employeeId: string;
+  employee: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    employeeCode: string;
+    department?: { name: string };
+    position?: { title: string };
+  };
+  baseSalary: number;
+  currency: string;
+  components: EmployeeSalaryComponent[];
+  effectiveFrom: string;
+  effectiveTo?: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface EmployeeSalaryComponent {
+  id: string;
+  componentId: string;
+  component: {
+    id: string;
+    name: string;
+    code: string;
+    type: SalaryComponentType;
+  };
+  amount: number;
+  isPercentage?: boolean;
+  percentageValue?: number;
+}
+
+export interface CreateEmployeeSalaryInput {
+  employeeId: string;
+  baseSalary: number;
+  currency?: string;
+  components: {
+    componentId: string;
+    amount: number;
+    isPercentage?: boolean;
+    percentageValue?: number;
+  }[];
+  effectiveFrom: string;
+  notes?: string;
+}
+
+export interface PayPeriod {
+  id: string;
+  name: string;
+  frequency: PayPeriodFrequency;
+  startDate: string;
+  endDate: string;
+  cutoffDate: string;
+  payDate: string;
+  fiscalYear: number;
+  isLocked: boolean;
+  status: 'OPEN' | 'CLOSED' | 'LOCKED';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreatePayPeriodInput {
+  name: string;
+  frequency: PayPeriodFrequency;
+  startDate: string;
+  endDate: string;
+  cutoffDate: string;
+  payDate: string;
+  fiscalYear: number;
+}
+
+export interface UpdatePayPeriodInput extends Partial<CreatePayPeriodInput> {
+  id: string;
+}
+
+export interface PayrollRun {
+  id: string;
+  period: string;
+  payPeriod?: PayPeriod;
+  startDate: string;
+  endDate: string;
+  status: PayrollStatus;
+  totalGross: number;
+  totalNet: number;
+  totalDeductions: number;
+  totalTax: number;
+  currency: string;
+  notes?: string;
+  processedBy?: string;
+  processedAt?: string;
+  approvedBy?: string;
+  approvedAt?: string;
+  employeeCount?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreatePayrollRunInput {
+  period: string;
+  startDate: string;
+  endDate: string;
+  currency?: string;
+  notes?: string;
+  employeeIds?: string[];
+}
+
+export interface PayrollRecord {
+  id: string;
+  payrollRunId: string;
+  employeeId: string;
+  employee: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    employeeCode: string;
+    department?: { name: string };
+    position?: { title: string };
+  };
+  baseSalary: number;
+  allowances: { name: string; amount: number }[];
+  bonuses: { name: string; amount: number }[];
+  overtimePay: number;
+  grossPay: number;
+  taxAmount: number;
+  socialInsurance: number;
+  healthInsurance: number;
+  otherDeductions: { name: string; amount: number }[];
+  totalDeductions: number;
+  netPay: number;
+  currency: string;
+  payslipUrl?: string;
+  status: PayrollRecordStatus;
+  paidAt?: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PayrollRecordAdjustment {
+  recordId: string;
+  componentName: string;
+  amount: number;
+  reason: string;
+}
+
+export interface Payslip {
+  id: string;
+  payrollRecordId: string;
+  employeeId: string;
+  employee: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    employeeCode: string;
+    department?: { name: string };
+    position?: { title: string };
+  };
+  period: string;
+  payDate: string;
+  baseSalary: number;
+  earnings: PayslipLineItem[];
+  deductions: PayslipLineItem[];
+  grossPay: number;
+  totalDeductions: number;
+  netPay: number;
+  currency: string;
+  ytdGross: number;
+  ytdNet: number;
+  ytdTax: number;
+  pdfUrl?: string;
+  createdAt: string;
+}
+
+export interface PayslipLineItem {
+  name: string;
+  amount: number;
+  type: string;
+}
+
+export interface TaxRule {
+  id: string;
+  name: string;
+  country: string;
+  region?: string;
+  brackets: TaxBracket[];
+  deductions: TaxDeduction[];
+  socialInsuranceRate: number;
+  healthInsuranceRate: number;
+  unemploymentInsuranceRate: number;
+  isActive: boolean;
+  effectiveFrom: string;
+  effectiveTo?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TaxBracket {
+  min: number;
+  max: number | null;
+  rate: number;
+  fixedAmount?: number;
+}
+
+export interface TaxDeduction {
+  name: string;
+  amount: number;
+  description?: string;
+}
+
+export interface CreateTaxRuleInput {
+  name: string;
+  country: string;
+  region?: string;
+  brackets: TaxBracket[];
+  deductions?: TaxDeduction[];
+  socialInsuranceRate?: number;
+  healthInsuranceRate?: number;
+  unemploymentInsuranceRate?: number;
+  effectiveFrom: string;
+  effectiveTo?: string;
+}
+
+export interface UpdateTaxRuleInput extends Partial<CreateTaxRuleInput> {
+  id: string;
+}
+
+export interface PayrollReportData {
+  period: string;
+  totalPayroll: number;
+  totalEmployees: number;
+  avgSalary: number;
+  departments: {
+    name: string;
+    employeeCount: number;
+    totalPayroll: number;
+    avgSalary: number;
+  }[];
+  monthlyTrend: {
+    month: string;
+    totalPayroll: number;
+    employeeCount: number;
+  }[];
+  taxLiability: {
+    taxType: string;
+    amount: number;
+  }[];
+}

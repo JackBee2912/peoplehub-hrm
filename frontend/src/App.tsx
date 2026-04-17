@@ -39,6 +39,17 @@ import AttendanceReportsPage from '@/pages/reports/AttendanceReportsPage';
 // Sprint 2: Manager
 import ManagerDashboardPage from '@/pages/manager/ManagerDashboardPage';
 
+// Sprint 3: Payroll
+import SalarySetupPage from '@/pages/payroll/SalarySetupPage';
+import PayPeriodPage from '@/pages/payroll/PayPeriodPage';
+import PayrollRunPage from '@/pages/payroll/PayrollRunPage';
+import PayrollRecordListPage from '@/pages/payroll/PayrollRecordListPage';
+import PayrollRecordDetailPage from '@/pages/payroll/PayrollRecordDetailPage';
+import PayslipListPage from '@/pages/payroll/PayslipListPage';
+import PayslipViewPage from '@/pages/payroll/PayslipViewPage';
+import TaxRulePage from '@/pages/payroll/TaxRulePage';
+import PayrollReportsPage from '@/pages/payroll/PayrollReportsPage';
+
 const App: React.FC = () => {
   return (
     <QueryClientProvider client={queryClient}>
@@ -140,6 +151,48 @@ const App: React.FC = () => {
                 }
               >
                 <Route index element={<ManagerDashboardPage />} />
+              </Route>
+
+              {/* Sprint 3: Payroll routes (Admin/HR only) */}
+              <Route
+                path="/payroll"
+                element={
+                  <RequireAuth allowedRoles={['ADMIN', 'HR_MANAGER']}>
+                    <AdminLayout />
+                  </RequireAuth>
+                }
+              >
+                <Route path="salary-setup" element={<SalarySetupPage />} />
+                <Route path="pay-periods" element={<PayPeriodPage />} />
+                <Route path="runs" element={<PayrollRunPage />} />
+                <Route path="runs/:runId/records" element={<PayrollRecordListPage />} />
+                <Route path="tax-rules" element={<TaxRulePage />} />
+                <Route path="reports" element={<PayrollReportsPage />} />
+              </Route>
+
+              {/* Sprint 3: Payroll record detail (Admin/HR only) */}
+              <Route
+                path="/payroll/records/:recordId"
+                element={
+                  <RequireAuth allowedRoles={['ADMIN', 'HR_MANAGER']}>
+                    <AdminLayout />
+                  </RequireAuth>
+                }
+              >
+                <Route index element={<PayrollRecordDetailPage />} />
+              </Route>
+
+              {/* Sprint 3: Payslip routes (all authenticated users) */}
+              <Route
+                path="/payroll/payslips"
+                element={
+                  <RequireAuth>
+                    <AdminLayout />
+                  </RequireAuth>
+                }
+              >
+                <Route index element={<PayslipListPage />} />
+                <Route path=":payslipId" element={<PayslipViewPage />} />
               </Route>
 
               {/* Default redirect */}
