@@ -222,11 +222,11 @@ export class DepartmentService {
       if (visited.has(currentId)) break; // Safety against existing cycles
       visited.add(currentId);
 
-      const dept = await this.prisma.department.findFirst({
+      const dept: { parentId: string | null } | null = await this.prisma.department.findFirst({
         where: { id: currentId, tenantId },
         select: { parentId: true },
       });
-      currentId = dept?.parentId ?? null;
+      currentId = dept?.parentId || null;
     }
 
     return false;

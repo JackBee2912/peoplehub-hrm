@@ -65,7 +65,6 @@ export class UserService {
     const updated = await this.prisma.user.update({
       where: { id: userId },
       data: updateData,
-      include: { employee: { select: { id: true, firstName: true, lastName: true, phone: true } } },
       select: {
         id: true,
         email: true,

@@ -7,6 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { authService } from '@/services/auth';
 import { useAuthStore } from '@/stores/authStore';
+import type { User } from '@/types';
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -51,7 +52,18 @@ const LoginPage: React.FC = () => {
         rememberMe: data.rememberMe,
       });
 
-      login(response.user, response.tokens.accessToken, response.tokens.refreshToken);
+      const user: User = {
+        id: response.user.id,
+        email: response.user.email,
+        role: response.user.role,
+        firstName: (response.user as any).firstName || '',
+        lastName: (response.user as any).lastName || '',
+        isActive: (response.user as any).isActive ?? true,
+        lastLoginAt: (response.user as any).lastLoginAt || null,
+        createdAt: (response.user as any).createdAt || new Date().toISOString(),
+        updatedAt: (response.user as any).updatedAt || new Date().toISOString(),
+      };
+      login(user, response.tokens.accessToken, response.tokens.refreshToken);
 
       // Role-aware redirect
       if (response.user.role === 'ADMIN' || response.user.role === 'HR_MANAGER') {

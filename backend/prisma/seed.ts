@@ -182,6 +182,7 @@ async function main() {
   // 7. Create employees
   const employees = [
     {
+      employeeCode: "EMP-00001",
       firstName: "John",
       lastName: "Smith",
       email: "john.smith@peoplehub.com",
@@ -193,6 +194,7 @@ async function main() {
       phone: "+1-555-0101",
     },
     {
+      employeeCode: "EMP-00002",
       firstName: "Jane",
       lastName: "Doe",
       email: "jane.doe@peoplehub.com",
@@ -203,6 +205,7 @@ async function main() {
       phone: "+1-555-0102",
     },
     {
+      employeeCode: "EMP-00003",
       firstName: "Alice",
       lastName: "Johnson",
       email: "alice.johnson@peoplehub.com",
@@ -213,6 +216,7 @@ async function main() {
       phone: "+1-555-0103",
     },
     {
+      employeeCode: "EMP-00004",
       firstName: "Bob",
       lastName: "Williams",
       email: "bob.williams@peoplehub.com",
@@ -232,7 +236,7 @@ async function main() {
       await prisma.employee.create({
         data: {
           tenantId: tenant.id,
-          employeeCode: "TEMP",
+          employeeCode: emp.employeeCode,
           firstName: emp.firstName,
           lastName: emp.lastName,
           email: emp.email,
@@ -249,20 +253,7 @@ async function main() {
     }
   }
 
-  // Fix employee codes (re-generate after all employees are created)
-  const allEmployees = await prisma.employee.findMany({
-    where: { tenantId: tenant.id },
-    orderBy: { createdAt: "asc" },
-  });
-
-  for (let i = 0; i < allEmployees.length; i++) {
-    const code = `EMP-${String(i + 1).padStart(5, "0")}`;
-    await prisma.employee.update({
-      where: { id: allEmployees[i].id },
-      data: { employeeCode: code },
-    });
-  }
-  console.log("Employee codes updated.");
+  console.log("Employee codes assigned.");
 
   console.log("\nDatabase seeding completed successfully!");
   console.log("\nLogin credentials:");

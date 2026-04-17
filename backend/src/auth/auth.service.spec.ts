@@ -250,8 +250,9 @@ describe('AuthService', () => {
       const result = await service.login(loginDto);
 
       expect(result).toHaveProperty('user');
-      expect(result).toHaveProperty('accessToken');
-      expect(result).toHaveProperty('refreshToken');
+      expect(result).toHaveProperty('tokens');
+      expect(result.tokens).toHaveProperty('accessToken');
+      expect(result.tokens).toHaveProperty('refreshToken');
       expect(result.user).toEqual({
         id: 'user-1',
         email: 'test@example.com',

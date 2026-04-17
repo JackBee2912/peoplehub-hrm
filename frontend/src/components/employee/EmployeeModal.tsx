@@ -351,7 +351,7 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
           </Col>
           <Col span={8}>
             <Form.Item label="Emergency Contact">
-              <Controller name="emergencyContact" control={control} render={({ field }) => <Input {...field} />} />
+              <Controller name="emergencyContactName" control={control} render={({ field }) => <Input {...field} />} />
             </Form.Item>
           </Col>
         </Row>

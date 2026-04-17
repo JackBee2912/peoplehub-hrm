@@ -10,12 +10,23 @@ export default defineConfig({
     },
   },
   server: {
-    port: 3000,
+    port: 5173,
+    host: '0.0.0.0',
+    strictPort: true,
+    watch: {
+      usePolling: true,
+    },
     proxy: {
       '/api': {
-        target: 'http://localhost:3001',
+        target: 'http://backend:3001',
         changeOrigin: true,
       },
     },
+  },
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: './src/test/setup.ts',
+    include: ['src/**/*.spec.{ts,tsx}'],
   },
 });

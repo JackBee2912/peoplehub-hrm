@@ -91,8 +91,8 @@ export class PositionService {
     }
 
     // Validate salary range
-    const minSalary = dto.minSalary !== undefined ? dto.minSalary : (existing.minSalary as number);
-    const maxSalary = dto.maxSalary !== undefined ? dto.maxSalary : (existing.maxSalary as number);
+    const minSalary = dto.minSalary !== undefined ? dto.minSalary : (existing.minSalary ? Number(existing.minSalary) : undefined);
+    const maxSalary = dto.maxSalary !== undefined ? dto.maxSalary : (existing.maxSalary ? Number(existing.maxSalary) : undefined);
     if (minSalary !== undefined && maxSalary !== undefined && minSalary > maxSalary) {
       throw new BadRequestException("Minimum salary cannot exceed maximum salary");
     }

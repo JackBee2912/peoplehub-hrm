@@ -324,6 +324,17 @@ describe('DepartmentService', () => {
       ).rejects.toThrow(BadRequestException);
     });
 
+    it('should prevent creating circular hierarchy', async () => {
+      mockPrismaService.department.findFirst
+        .mockResolvedValueOnce({ id: 'dept-1' }) // existing check
+        .mockResolvedValueOnce({ id: 'child-1' }) // parent exists
+        .mockResolvedValueOnce({ parentId: 'dept-1' }); // isDescendant: child's parent is dept-1
+
+      await expect(
+        service.update('dept-1', tenantId, { parentId: 'child-1' }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
     it('should validate new parent exists', async () => {
       mockPrismaService.department.findFirst
         .mockResolvedValueOnce({ id: 'dept-1' }) // existing check
@@ -332,6 +343,22 @@ describe('DepartmentService', () => {
       await expect(
         service.update('dept-1', tenantId, { parentId: 'nonexistent-parent' }),
       ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('findAll', () => {
+    it('should return all active departments', async () => {
+      const depts = [{ id: 'dept-1', name: 'Engineering' }];
+      mockPrismaService.department.findMany.mockResolvedValue(depts);
+
+      const result = await service.findAll(tenantId);
+
+      expect(result).toEqual(depts);
+      expect(mockPrismaService.department.findMany).toHaveBeenCalledWith({
+        where: { tenantId, isActive: true },
+        orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+        select: expect.any(Object),
+      });
     });
   });
 
