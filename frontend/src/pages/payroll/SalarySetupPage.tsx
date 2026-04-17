@@ -15,7 +15,6 @@ import {
   Typography,
   Tabs,
   Switch,
-  Row,
 } from 'antd';
 import {
   PlusOutlined,
@@ -242,13 +241,13 @@ const EmployeeSalaryTab: React.FC = () => {
     queryFn: payrollService.getSalaryComponents,
   });
 
-  const { data: salarySetups = [], isLoading } = useQuery({
+  const { data: salarySetups = [] } = useQuery({
     queryKey: ['employee-salary-setups'],
     queryFn: () => Promise.resolve([]),
+    retry: false,
   });
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const _salarySetups = salarySetups;
+  // salarySetups used for employee salary display in tabs
+  void salarySetups;
 
   const createMutation = useMutation({
     mutationFn: payrollService.setEmployeeSalary,

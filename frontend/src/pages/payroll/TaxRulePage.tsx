@@ -21,7 +21,7 @@ import type { TaxRule, CreateTaxRuleInput, TaxBracket, TaxDeduction } from '@/ty
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 
-const { Title, Text } = Typography;
+const { Title } = Typography;
 
 const TaxRulePage: React.FC = () => {
   const [modalOpen, setModalOpen] = useState(false);
@@ -360,7 +360,7 @@ const TaxRulePage: React.FC = () => {
           <Table
             columns={bracketColumns}
             dataSource={brackets}
-            rowKey={(r, i) => `bracket-${i}`}
+            rowKey={(_, i) => `bracket-${i}`}
             size="small"
             pagination={false}
             footer={() => (
@@ -374,7 +374,7 @@ const TaxRulePage: React.FC = () => {
           <Table
             columns={deductionColumns}
             dataSource={deductions}
-            rowKey={(r, i) => `deduction-${i}`}
+            rowKey={(_, i) => `deduction-${i}`}
             size="small"
             pagination={false}
             footer={() => (

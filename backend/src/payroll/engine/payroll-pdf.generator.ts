@@ -10,6 +10,12 @@ export class PayrollPdfGenerator {
   private readonly MARGIN = 40;
   private readonly LINE_HEIGHT = 16;
 
+  // Color constants
+  private readonly darkGreen = rgb(0.1, 0.5, 0.1);
+  private readonly lightGray = rgb(0.85, 0.85, 0.85);
+  private readonly gray = rgb(0.5, 0.5, 0.5);
+  private readonly headerBlue = rgb(0.1, 0.1, 0.5);
+
   async generate(payslipData: any): Promise<Buffer> {
     const pdfDoc = await PDFDocument.create();
     const page = pdfDoc.addPage([595.28, 841.89]); // A4
@@ -24,9 +30,9 @@ export class PayrollPdfGenerator {
     let y = height - this.MARGIN;
 
     // --- Header ---
-    y = this.drawText(page, boldFont, "PAYSLIP", this.FONT_SIZE_TITLE, this.MARGIN, y, rgb(0.1, 0.1, 0.5));
+    y = this.drawText(page, boldFont, "PAYSLIP", this.FONT_SIZE_TITLE, this.MARGIN, y, this.headerBlue);
     y -= 8;
-    y = this.drawHorizontalLine(page, this.MARGIN, y, width - this.MARGIN * 2, rgb(0.7, 0.7, 0.7));
+    y = this.drawHorizontalLine(page, this.MARGIN, y, width - this.MARGIN * 2, this.lightGray);
     y -= 12;
 
     // --- Company Info ---
@@ -136,13 +142,13 @@ export class PayrollPdfGenerator {
     size: number,
     x: number,
     y: number,
-    color?: { r: number; g: number; b: number },
+    color?: any,
   ): number {
-    page.drawText(text, { x, y, font, size, color });
+    page.drawText(text, { x, y, font, size, color: color || undefined });
     return y;
   }
 
-  private drawHorizontalLine(page: any, x: number, y: number, length: number, color?: { r: number; g: number; b: number }): number {
+  private drawHorizontalLine(page: any, x: number, y: number, length: number, color?: any): number {
     page.drawLine({
       start: { x, y },
       end: { x: x + length, y },
@@ -161,7 +167,7 @@ export class PayrollPdfGenerator {
     x: number,
     y: number,
     pageWidth: number,
-    color?: { r: number; g: number; b: number },
+    color?: any,
   ): number {
     page.drawText(label, { x, y, font, size, color });
     // Right-align value

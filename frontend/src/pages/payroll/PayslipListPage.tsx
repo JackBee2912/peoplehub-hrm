@@ -14,7 +14,7 @@ import {
 import { EyeOutlined, DownloadOutlined, MailOutlined } from '@ant-design/icons';
 import { payslipService } from '@/services/payslip';
 import type { Payslip } from '@/types';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 

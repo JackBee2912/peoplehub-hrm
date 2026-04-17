@@ -20,7 +20,6 @@ import {
   MailOutlined,
 } from '@ant-design/icons';
 import { payslipService } from '@/services/payslip';
-import type { Payslip } from '@/types';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useParams, useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
